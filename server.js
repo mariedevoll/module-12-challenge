@@ -107,8 +107,7 @@ const viewAllRoles = () => {
 
 //add a department
 const addDepartment = () => {
-    inquirer
-    .prompt([
+    inquirer.prompt([
         {
             name: 'newDepartment',
             type: 'input',
@@ -125,3 +124,110 @@ const addDepartment = () => {
     });
 };
 
+//add a role
+const addRole = () => {
+    const sql = `SELECT * FROM department`
+    connection.promise().query(sql, (error, response) => {
+        if (error) throw error;
+        let deptNamesArray = [];
+        response.forEach((department) => {deptNamesArray.push(department.department_name);
+        });
+        deptNamesArray.push('Create Department');
+        inquirer.prompt([
+            {
+                name: 'departmentName',
+                type: 'list',
+                message: 'Which department is this new role in?',
+                choices: deptNamesArray
+            }
+        ])
+        .then((answer) => {
+            if (answer.departmentName === 'Create Department') {
+                this.addDepartment();
+            } else {
+                addRoleDescription(answer);
+            }
+        });
+const addRoleDescription = (departmentData) => {
+    inquirer.prompt([
+        {
+            name: 'newRole',
+            type: 'input',
+            message: 'What is the name of the new role?',
+            validate: validate.validateString
+        }, {
+            name: 'salary',
+            type: 'input',
+            message: 'What is the salary of this new role?',
+            validate: validate.validateString
+        }
+    ])
+    .then((answer) => {
+        let createdRole = answer.newRole;
+        let departmentId;
+
+        response.forEach((department) => {
+         if (departmentData.departmentName === department.department_name) {departmentId = department.id;}
+        });
+        let sql =  `INSERT INTO role (title, salary, department_id) VALUES (?, ?, ?)`;
+        let crit = [createdRole, answer.salary, departmentId];
+
+        connection.promise().query(sql, crit, (error) => {
+            if (error) throw error;
+            viewAllRoles();
+        });
+    });
+};
+    });
+};
+
+//add an employee
+const addEmployee = () => {
+    inquirer.prompt([
+        {
+            type: 'input',
+            name: 'firstName',
+            message: 'What is the employee first name?',
+            validate: addFirstName => {
+                if (addFirstName) {
+                    return true;
+                } else {
+                    console.log('Please enter a first name');
+                    return false;
+                }
+            }
+        },
+        {
+            type:'input',
+            name: 'lastName',
+            message: 'What is the employee last name?',
+            validate: addLastName => {
+                if (addLastName) {
+                    return true;
+                } else {
+                    console.log('Please enter a last name');
+                    return false;
+                }
+            }
+        }
+    ])
+    .then(answer => {
+        const crit = [answer.firstName, answer.lastName]
+        const roleSql = `SELECT role.id, role.title FROM role`;
+        connection.promise().query(roleSql, (error, data) => {
+            if (error) throw errorl
+            const roles = data.map(({ id, title }) => ({ name: title, value: id }));
+            inquirer.prompt([
+                {
+                    type: 'list',
+                    name: 'role',
+                    message: 'What is the employee role?',
+                    choices: roles
+                }
+            ])
+            .then(roleChoice => {
+                const role = roleChoice.role;
+            })
+        })
+    })
+}
