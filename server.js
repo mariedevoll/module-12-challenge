@@ -1,5 +1,5 @@
-
 const inquirer = require('inquirer');
+const mysql = require("mysql2/promise")
 
 //prompt user for choices
 const promptUser = () => {
@@ -16,12 +16,12 @@ const promptUser = () => {
             'Add a Role', //prompted to enter the name, salary, and department for the role and that role is added to the database
             'Add an Employee', //prompted to enter the employee’s first name, last name, role, and manager, and that employee is added to the database
             'Update an Employee Role', //prompted to select an employee to update and their new role and this information is updated in the database
-            'View All Employees by Department',
-            'Remove an Employee',
-            'Update an Employee Manager',
-            'Remove Role',
-            'View Department Budgets',
-            'Remove Department'
+            //'View All Employees by Department',
+            //'Remove an Employee',
+            //'Update an Employee Manager',
+            //'Remove Role',
+           // 'View Department Budgets',
+           // 'Remove Department'
         ]
     }
 ])
@@ -49,24 +49,24 @@ const promptUser = () => {
         if (choices ===  'Update an Employee Role') {
             updateEmployeeRole();
         }
-        if (choices === 'View All Employees by Department') {
-            viewEmployeesByDepartment();
-        }
-        if (choices === 'Remove an Employee') {
-            removeEmployee();
-        }
-        if (choices === 'Update an Employee Manager') {
-            udpateEmployeeManager();
-        }
-        if (choices === 'Remove Role') {
-            removeRole();
-        }
-        if (choices === 'View Department Budgets') {
-            viewDepartmentBudget();
-        }
-        if (choices === 'Remove Department') {
-            removeDepartment();
-        }
+        // if (choices === 'View All Employees by Department') {
+        //     viewEmployeesByDepartment();
+        // }
+        // if (choices === 'Remove an Employee') {
+        //     removeEmployee();
+        // }
+        // if (choices === 'Update an Employee Manager') {
+        //     udpateEmployeeManager();
+        // }
+        // if (choices === 'Remove Role') {
+        //     removeRole();
+        // }
+        // if (choices === 'View Department Budgets') {
+        //     viewDepartmentBudget();
+        // }
+        // if (choices === 'Remove Department') {
+        //     removeDepartment();
+        // }
     });
 };
 
