@@ -1,5 +1,5 @@
 const inquirer = require('inquirer');
-const mysql = require("mysql2/promise")
+
 
 //prompt user for choices
 const promptUser = () => {
@@ -15,19 +15,12 @@ const promptUser = () => {
             'Add a Department', //prompted to enter the name of the department and that department is added to the database
             'Add a Role', //prompted to enter the name, salary, and department for the role and that role is added to the database
             'Add an Employee', //prompted to enter the employee’s first name, last name, role, and manager, and that employee is added to the database
-            'Update an Employee Role', //prompted to select an employee to update and their new role and this information is updated in the database
-            //'View All Employees by Department',
-            //'Remove an Employee',
-            //'Update an Employee Manager',
-            //'Remove Role',
-           // 'View Department Budgets',
-           // 'Remove Department'
+            'Update an Employee Role' //prompted to select an employee to update and their new role and this information is updated in the database
         ]
     }
 ])
 .then((answers) => {
     const {choices} = answers;
-
         if (choices === 'View all Employees') {
         viewAllEmployees();
          }   
@@ -49,24 +42,6 @@ const promptUser = () => {
         if (choices ===  'Update an Employee Role') {
             updateEmployeeRole();
         }
-        // if (choices === 'View All Employees by Department') {
-        //     viewEmployeesByDepartment();
-        // }
-        // if (choices === 'Remove an Employee') {
-        //     removeEmployee();
-        // }
-        // if (choices === 'Update an Employee Manager') {
-        //     udpateEmployeeManager();
-        // }
-        // if (choices === 'Remove Role') {
-        //     removeRole();
-        // }
-        // if (choices === 'View Department Budgets') {
-        //     viewDepartmentBudget();
-        // }
-        // if (choices === 'Remove Department') {
-        //     removeDepartment();
-        // }
     });
 };
 
@@ -77,7 +52,7 @@ const viewAllEmployees = () => {
             department.department_name AS 'department', role.salary FROM employee, role, department 
             WHERE department.id = role.department_id AND role.id = employee.role_id 
             ORDER BY employee.id ASC`;
-    connection.promise().query(sql, (error, response) => {
+    db.query(sql, (error, response) => {
         if (error) throw error;
         promptUser();
     });
@@ -87,7 +62,7 @@ const viewAllEmployees = () => {
 const viewAllDepartments = () => {
     const sql = `SELECT department.id AS id, department.department_name 
         AS department FROM department`;
-    connection.promise().query(sql, (error, response) => {
+    db.query(sql, (error, response) => {
         if (error) throw error;
         promptUser();
     });
@@ -97,7 +72,7 @@ const viewAllDepartments = () => {
 const viewAllRoles = () => {
     const sql = `SELECT role.id, role.title, department.department_name AS department 
             FROM role INNER JOIN department ON role department_id = department.id`;
-    connection.promise().query(sql, (error, response) => {
+    db.query(sql, (error, response) => {
         if (error) throw error;
         response.forEach((role) => {console.log(role.title);
         });
@@ -112,12 +87,11 @@ const addDepartment = () => {
             name: 'newDepartment',
             type: 'input',
             message: 'What is the name of the new department?',
-            validate: validate.validateString
         }
     ])
     .then((answer) => {
-        let sql = `INSERT INTO department (department_name VALUES (?)`;
-        connection.query(sql, answer.newDepartment, (error, response) => {
+        let sql = `INSERT INTO department(name) VALUES ('${answer.department}');`
+        db.query(sql, (error, response) => {
             if (error) throw error;
             viewAllDepartments();
         });
@@ -127,7 +101,7 @@ const addDepartment = () => {
 //add a role
 const addRole = () => {
     const sql = `SELECT * FROM department`
-    connection.promise().query(sql, (error, response) => {
+    db.query(sql, (error, response) => {
         if (error) throw error;
         let deptNamesArray = [];
         response.forEach((department) => {deptNamesArray.push(department.department_name);
@@ -172,7 +146,7 @@ const addRoleDescription = (departmentData) => {
         let sql =  `INSERT INTO role (title, salary, department_id) VALUES (?, ?, ?)`;
         let crit = [createdRole, answer.salary, departmentId];
 
-        connection.promise().query(sql, crit, (error) => {
+        db.query(sql, crit, (error) => {
             if (error) throw error;
             viewAllRoles();
         });
@@ -214,7 +188,7 @@ const addEmployee = () => {
     .then(answer => {
         const crit = [answer.firstName, answer.lastName]
         const roleSql = `SELECT role.id, role.title FROM role`;
-        connection.promise().query(roleSql, (error, data) => {
+        db.query(roleSql, (error, data) => {
             if (error) throw errorl
             const roles = data.map(({ id, title }) => ({ name: title, value: id }));
             inquirer.prompt([
@@ -229,7 +203,7 @@ const addEmployee = () => {
                 const role = roleChoice.role;
                 crit.push(role);
                 const managerSql = `SELECT * FROM employee`;
-                connection.promist().query(managerSql, (error, data) => {
+                db.query(managerSql, (error, data) => {
                     if (error) throw error;
                     viewAllEmployees();
                 });
@@ -242,13 +216,13 @@ const addEmployee = () => {
 const updateEmployeeRole = () => {
     let sql = `SELECT employee.id, employee.first_name, employee.last_name, role.id AS "role_id" 
             FROM employee, role, department WHERE department.id = role.department_id AND role.id = employee.role_id`;
-    connection.promise().query(sql, (error, response) => {
+    db.query(sql, (error, response) => {
         if (error) throw error;
         let employeeNamesArray = [];
         response.forEach((role) => {employeeNamesArray.push(`${employee.first_name} ${employee.last_name}`);});
 
         let sql = `SELECT role.id, role.title FROM role`;
-        connection.promise().query(swl, (error, response) => {
+        db.query(swl, (error, response) => {
             if (error) throw error;
             let rolesArray = [];
             response.forEach((role) => {rolesArray.push(role.title);});
@@ -280,7 +254,7 @@ const updateEmployeeRole = () => {
                 }
             });
             let sqls = `UPDATE employee SET employee.role_id = ? WHERE employee.id = ?`;
-            connection.query(
+            db.query(
                 sqls, [newTitleId, employeeId],
                 (error) => {
                     if (error) throw error;
