@@ -2,19 +2,19 @@
     "name": "module-12-challenge",
     "version": "1.0.0",
     "description": "",
-    "main": "server.js",
+    "main": "index.js",
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1",
-        "start": "node server.js"
+        "start": "node index.js"
     },
     "repository": {
         "type": "git",
-        "url" : "git+https://github.com/mariedevoll/module-12-challenge"
+        "url": "git+https://github.com/mariedevoll/module-12-challenge"
     },
     "keywords": [],
     "author": "",
     "license": "ISC",
     "dependencies": {
+        "dotenv": "^16.4.5",
         "express": "^4.17.1",
         "inquirer": "^8.2.4",
         "pg": "^8.11.5"

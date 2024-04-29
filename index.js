@@ -1,5 +1,18 @@
+const { response } = require('express');
 const inquirer = require('inquirer');
+const { Pool } = require('pg');
 
+const pool = new Pool({
+    host: 'localhost',
+    user: 'postgres',
+    password: 'Shadow907',
+    database: 'business_db',
+    port: 5432  // the default PostGres local CONNECTION PORT
+},
+    console.log("Connected to the database")
+);
+
+pool.connect();
 
 //prompt user for choices
 const promptUser = () => {
@@ -14,9 +27,11 @@ const promptUser = () => {
             'View all Roles', //presented with the job title, role id, the department that role belongs to, and the salary for that role
             'Add a Department', //prompted to enter the name of the department and that department is added to the database
             'Add a Role', //prompted to enter the name, salary, and department for the role and that role is added to the database
-            'Add an Employee', //prompted to enter the employee’s first name, last name, role, and manager, and that employee is added to the database
-            'Update an Employee Role' //prompted to select an employee to update and their new role and this information is updated in the database
+            'Add an Employee', //prompted to enter the employee first name, last name, role, and manager, and that employee is added to the database
+            'Update an Employee Role', //prompted to select an employee to update and their new role and this information is updated in the database
         ]
+
+        // choices: [{ name: "Text to Display", value: employeeId }]
     }
 ])
 .then((answers) => {
@@ -48,11 +63,11 @@ const promptUser = () => {
 
 //view all employees
 const viewAllEmployees = () => {
-    let sql = `SELECT employee.id, employee.first_name, employee.last_name, role.title, 
+    sqlQuery = `SELECT employee.id, employee.first_name, employee.last_name, role.title, 
             department.department_name AS 'department', role.salary FROM employee, role, department 
             WHERE department.id = role.department_id AND role.id = employee.role_id 
             ORDER BY employee.id ASC`;
-    db.query(sql, (error, response) => {
+    pool.query(sqlQuery, (error, results) => {
         if (error) throw error;
         promptUser();
     });
@@ -62,7 +77,7 @@ const viewAllEmployees = () => {
 const viewAllDepartments = () => {
     const sql = `SELECT department.id AS id, department.department_name 
         AS department FROM department`;
-    db.query(sql, (error, response) => {
+    pool.query(sql, (error, response) => {
         if (error) throw error;
         promptUser();
     });
@@ -72,7 +87,7 @@ const viewAllDepartments = () => {
 const viewAllRoles = () => {
     const sql = `SELECT role.id, role.title, department.department_name AS department 
             FROM role INNER JOIN department ON role department_id = department.id`;
-    db.query(sql, (error, response) => {
+    pool.query(sql, (error, response) => {
         if (error) throw error;
         response.forEach((role) => {console.log(role.title);
         });
@@ -91,7 +106,7 @@ const addDepartment = () => {
     ])
     .then((answer) => {
         let sql = `INSERT INTO department(name) VALUES ('${answer.department}');`
-        db.query(sql, (error, response) => {
+        pool.query(sql, (error, response) => {
             if (error) throw error;
             viewAllDepartments();
         });
@@ -101,7 +116,7 @@ const addDepartment = () => {
 //add a role
 const addRole = () => {
     const sql = `SELECT * FROM department`
-    db.query(sql, (error, response) => {
+    pool.query(sql, (error, response) => {
         if (error) throw error;
         let deptNamesArray = [];
         response.forEach((department) => {deptNamesArray.push(department.department_name);
@@ -146,7 +161,7 @@ const addRoleDescription = (departmentData) => {
         let sql =  `INSERT INTO role (title, salary, department_id) VALUES (?, ?, ?)`;
         let crit = [createdRole, answer.salary, departmentId];
 
-        db.query(sql, crit, (error) => {
+        pool.query(sql, crit, (error) => {
             if (error) throw error;
             viewAllRoles();
         });
@@ -188,8 +203,8 @@ const addEmployee = () => {
     .then(answer => {
         const crit = [answer.firstName, answer.lastName]
         const roleSql = `SELECT role.id, role.title FROM role`;
-        db.query(roleSql, (error, data) => {
-            if (error) throw errorl
+        pool.query(roleSql, (error, data) => {
+            if (error) throw error
             const roles = data.map(({ id, title }) => ({ name: title, value: id }));
             inquirer.prompt([
                 {
@@ -203,7 +218,7 @@ const addEmployee = () => {
                 const role = roleChoice.role;
                 crit.push(role);
                 const managerSql = `SELECT * FROM employee`;
-                db.query(managerSql, (error, data) => {
+                pool.query(managerSql, (error, data) => {
                     if (error) throw error;
                     viewAllEmployees();
                 });
@@ -216,13 +231,13 @@ const addEmployee = () => {
 const updateEmployeeRole = () => {
     let sql = `SELECT employee.id, employee.first_name, employee.last_name, role.id AS "role_id" 
             FROM employee, role, department WHERE department.id = role.department_id AND role.id = employee.role_id`;
-    db.query(sql, (error, response) => {
+    pool.query(sql, (error, response) => {
         if (error) throw error;
         let employeeNamesArray = [];
         response.forEach((role) => {employeeNamesArray.push(`${employee.first_name} ${employee.last_name}`);});
 
         let sql = `SELECT role.id, role.title FROM role`;
-        db.query(swl, (error, response) => {
+        pool.query(swl, (error, response) => {
             if (error) throw error;
             let rolesArray = [];
             response.forEach((role) => {rolesArray.push(role.title);});
@@ -254,7 +269,7 @@ const updateEmployeeRole = () => {
                 }
             });
             let sqls = `UPDATE employee SET employee.role_id = ? WHERE employee.id = ?`;
-            db.query(
+            pool.query(
                 sqls, [newTitleId, employeeId],
                 (error) => {
                     if (error) throw error;
@@ -266,3 +281,5 @@ const updateEmployeeRole = () => {
         });
     });
 };
+
+promptUser();
