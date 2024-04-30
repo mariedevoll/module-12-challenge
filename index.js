@@ -1,6 +1,7 @@
 const { response } = require('express');
 const inquirer = require('inquirer');
 const { Pool } = require('pg');
+const consoleTable = require('console.table');
 
 const pool = new Pool({
     host: 'localhost',
@@ -8,64 +9,70 @@ const pool = new Pool({
     password: 'Shadow907',
     database: 'business_db',
     port: 5432  // the default PostGres local CONNECTION PORT
-},
-    console.log("Connected to the database")
-);
-
+});
+console.log("Connected to the database")
 pool.connect();
 
 function quit() {
-    console.log("Byeeee");
+    console.log("Leaving the application now...");
     process.exit();
 }
 
 //prompt user for choices
 const promptUser = () => {
     inquirer.prompt([
-        {
+    {
         name: 'choice',
         type: 'list',
         message: 'Please choose one of the following options:',
         choices: [
-            'View all Employees',
-            'View all Departments',
-            'View all Roles',
-            'Add a Department',
-            'Add a Role',
-            'Add an Employee',
-            'Update an Employee Role',
-            'Quit'
+            {name: 'View all Employees', value: 'viewAllEmployees'},
+            {name: 'View all Departments', value:'viewAllDepartments'},
+            {name: 'View all Roles', value: 'viewAllRoles'},
+            {name: 'Add a Department', value: 'addDepartment'},
+            {name: 'Add a Role', value: 'addRole'},
+            {name: 'Add an Employee', value: 'addEmployee'},
+            {name: 'Update an Employee Role', value: 'updateEmployeeRole'},
+            {name: 'Quit', value: 'quit'}
         ]
     }
 ])
 .then((answers) => {
-
     console.log(answers, "Great Choice!");
-    let { choice } = answers;
-        if(answers.choice === 'View all Employees') {
+    if (answers.choice === 'quit') {
+        quit();
+    } else {
+        executeAction(answers.choice);
+    }
+});
+}
+const executeAction = (choice) => {
+    switch (choice) { 
+        case 'View all Employees':
             viewAllEmployees();
-        }
-        if(answers.choice === 'View all Departments') {
+            break;
+        case 'View all Departments': 
             viewAllDepartments();
-        }
-        if(answers.choice === 'View all Roles') {
+            break;
+        case 'View all Roles':
             viewAllRoles();
-        } 
-        if(answers.choice === 'Add a Department') {
+            break;
+        case 'Add a Department':
             addDepartment();
-        }
-        if(answers.choice === 'Add a Role') {
+            break;
+        case 'Add a Role':
             addRole();
-        }
-        if(answers.choice === 'Add an Employee') {
+            break;
+        case 'Add an Employee':
             addEmployee();
-        }
-        if(answers.choice ===  'Update an Employee Role') {
+            break;
+        case 'Update an Employee Role':
             updateEmployeeRole();
-        } else {
-            quit();
-        }
-    });
+            break;
+        default: 
+            console.log('Invalid Choice');
+            break;
+    }
 };
 
 
@@ -75,6 +82,9 @@ const viewAllEmployees = () => {
     pool.query(sqlQuery, (error, results) => {
         console.log(results)
         if (error) throw error;
+        console.log("\n");
+        console.table(results);
+        console.log("\n");
         promptUser();
     });
 };
@@ -85,6 +95,9 @@ const viewAllDepartments = () => {
         AS department FROM department`;
     pool.query(sqlQuery, (error, response) => {
         if (error) throw error;
+        console.log("\n");
+        console.table(results);
+        console.log("\n");
         promptUser();
     });
 };
@@ -97,6 +110,9 @@ const viewAllRoles = () => {
         if (error) throw error;
         response.forEach((role) => {console.log(role.title);
         });
+        console.log("\n");
+        console.table(results);
+        console.log("\n");
         promptUser();
     });
 };
@@ -114,6 +130,9 @@ const addDepartment = () => {
         sqlQuery = `INSERT INTO department(name) VALUES ('${answer.department}');`
         pool.query(sqlQuery, (error, response) => {
             if (error) throw error;
+            console.log("\n");
+            console.table(results);
+            console.log("\n");
             viewAllDepartments();
         });
     });
@@ -169,6 +188,9 @@ const addRoleDescription = (departmentData) => {
 
         pool.query(sqlQuery, crit, (error) => {
             if (error) throw error;
+            console.log("\n");
+            console.table(results);
+            console.log("\n");
             viewAllRoles();
         });
     });
@@ -226,6 +248,9 @@ const addEmployee = () => {
                 managerSql = `SELECT * FROM employee`;
                 pool.query(managerSql, (error, data) => {
                     if (error) throw error;
+                    console.log("\n");
+                    console.table(results);
+                    console.log("\n");
                     viewAllEmployees();
                 });
             });
@@ -279,6 +304,9 @@ const updateEmployeeRole = () => {
                 sqlQuery, [newTitleId, employeeId],
                 (error) => {
                     if (error) throw error;
+                    console.log("\n");
+                    console.table(results);
+                    console.log("\n");
                     console.log(`Employee Role Updated`);
                     promptUser();
                 }
