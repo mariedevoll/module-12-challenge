@@ -76,27 +76,26 @@ const executeAction = (choice) => {
 };
 
 
-//view all employees
+//function to view all employees
 const viewAllEmployees = () => {
-    sqlQuery = `SELECT * FROM employee`;
+    const sqlQuery = `SELECT * FROM employee`;
     pool.query(sqlQuery, (error, results) => {
-        console.log(results)
         if (error) throw error;
         console.log("\n");
-        console.table(results);
+        console.table(results.rows);
         console.log("\n");
         promptUser();
     });
 };
 
-//view all departments
+//function to view all departments
 const viewAllDepartments = () => {
-    sqlQuery = `SELECT department.id AS id, department.department_name 
+    const sqlQuery = `SELECT * FROM department.id AS id, department.department_name 
         AS department FROM department`;
     pool.query(sqlQuery, (error, response) => {
         if (error) throw error;
         console.log("\n");
-        console.table(results);
+        console.table(results.rows);
         console.log("\n");
         promptUser();
     });
@@ -104,14 +103,12 @@ const viewAllDepartments = () => {
 
 //view all roles
 const viewAllRoles = () => {
-    sqlQuery = `SELECT role.id, role.title, department.department_name AS department 
+    const sqlQuery = `SELECT role.id, role.title, department.department_name AS department 
             FROM role INNER JOIN department ON role department_id = department.id`;
     pool.query(sqlQuery, (error, response) => {
         if (error) throw error;
-        response.forEach((role) => {console.log(role.title);
-        });
         console.log("\n");
-        console.table(results);
+        console.table(results.rows);
         console.log("\n");
         promptUser();
     });
@@ -127,12 +124,11 @@ const addDepartment = () => {
         }
     ])
     .then((answer) => {
-        sqlQuery = `INSERT INTO department(name) VALUES ('${answer.department}');`
-        pool.query(sqlQuery, (error, response) => {
+        const sqlQuery = `INSERT INTO department(name) VALUES ('${answer.department}');`
+        const values = [answer.newDepartment];
+        pool.query(sqlQuery, values, (error) => {
             if (error) throw error;
-            console.log("\n");
-            console.table(results);
-            console.log("\n");
+            console.log("\nDepartment added!\n");
             viewAllDepartments();
         });
     });
@@ -140,66 +136,58 @@ const addDepartment = () => {
 
 //add a role
 const addRole = () => {
-    sqlQuery = `SELECT * FROM department`
+    const sqlQuery = `SELECT * FROM department`
     pool.query(sqlQuery, (error, response) => {
         if (error) throw error;
-        let deptNamesArray = [];
-        response.forEach((department) => {deptNamesArray.push(department.department_name);
-        });
-        deptNamesArray.push('Create Department');
+        const deptChoices = results.rows.map(dept => ({ name: dept.name, value: dept.id}));
+        deptChoices.push({ name: 'Create New Department', value: 'newDepartment'});
         inquirer.prompt([
             {
-                name: 'departmentName',
+                name: 'department',
                 type: 'list',
                 message: 'Which department is this new role in?',
-                choices: deptNamesArray
+                choices: deptChoices
+            },
+            {
+                name: 'title',
+                type: 'input',
+                message: 'What is the title of the new role?'
+            },
+            {
+                name: 'salary',
+                type: 'input',
+                message: 'What is the salary of the new role?'
             }
         ])
-        .then((answer) => {
-            if (answer.departmentName === 'Create Department') {
-                this.addDepartment();
+        .then((answers) => {
+            if (answers.department === 'newDepartment') {
+                addDepartment().then((departmentId) => {
+                    insertRole(answers.title, answers.salary, departmentId);
+                });
             } else {
-                addRoleDescription(answer);
+                insertRole(answers.title, answers.salary, answers.department);
             }
         });
-const addRoleDescription = (departmentData) => {
-    inquirer.prompt([
-        {
-            name: 'newRole',
-            type: 'input',
-            message: 'What is the name of the new role?',
-            validate: validate.validateString
-        }, {
-            name: 'salary',
-            type: 'input',
-            message: 'What is the salary of this new role?',
-            validate: validate.validateString
-        }
-    ])
-    .then((answer) => {
-        let createdRole = answer.newRole;
-        let departmentId;
-
-        response.forEach((department) => {
-         if (departmentData.departmentName === department.department_name) {departmentId = department.id;}
-        });
-        lsqlQuery =  `INSERT INTO role (title, salary, department_id) VALUES (?, ?, ?)`;
-        let crit = [createdRole, answer.salary, departmentId];
-
-        pool.query(sqlQuery, crit, (error) => {
-            if (error) throw error;
-            console.log("\n");
-            console.table(results);
-            console.log("\n");
-            viewAllRoles();
-        });
     });
-};
+}
+
+//function to insert role into database
+    const insertRole = (title, salary, departmentId) => {
+    const sqlQuery = `INSERT INTO role (title, salary, department_id) VALUES (?, ?, ?)`;
+    const values = [title, salary, departmentId];
+    pool.query(sqlQuery, values, (error) => {
+        if (error) throw error;
+        console.log("\nRole added!\n")
+        viewAllRoles();
     });
 };
 
-//add an employee
+//function to add an employee
 const addEmployee = () => {
+    const roleSql = `SELECT * FROM role`;
+    pool.query(roleSql, (error, data) => {
+        if (error) throw error;
+        const roles = data.rows.map(role => ({ name: role.title, value: role.id }));
     inquirer.prompt([
         {
             type: 'input',
@@ -226,40 +214,42 @@ const addEmployee = () => {
                     return false;
                 }
             }
+        },
+        {
+            type: 'list',
+            name: 'roleId',
+            message: 'What is the employee role?',
+            choices: roles
         }
     ])
     .then(answer => {
-        const crit = [answer.firstName, answer.lastName]
-        const roleSql = `SELECT role.id, role.title FROM role`;
-        pool.query(roleSql, (error, data) => {
-            if (error) throw error
-            const roles = data.map(({ id, title }) => ({ name: title, value: id }));
-            inquirer.prompt([
-                {
-                    type: 'list',
-                    name: 'role',
-                    message: 'What is the employee role?',
-                    choices: roles
-                }
-            ])
-            .then(roleChoice => {
-                const role = roleChoice.role;
-                crit.push(role);
-                managerSql = `SELECT * FROM employee`;
-                pool.query(managerSql, (error, data) => {
-                    if (error) throw error;
-                    console.log("\n");
-                    console.table(results);
-                    console.log("\n");
+        const sqlQuery = `INSERT INTO employee (first_name, last_name, role_id) VALUES (???)`;
+        const values = [answer.firstName, answer.lastName, answer.roleId];
+        pool.query(sqlQuery, values, (error) => {
+            if (error) throw error;
+            console.log("\nEmployee Added!\n");
                     viewAllEmployees();
                 });
             });
         });
-    });
-};
+    };
 
-//update an employee's role
+//function to update an employee's role
 const updateEmployeeRole = () => {
+    const employeeSql = `SELECT * FROM employee`;
+    pool.query(employeeSql, (error, employeesData) => {
+        if (error) throw error;
+        const employees = employeesData.rows.map(employee  => ({ name: `${employee.first_name} ${employee.last_name}`, value: employee.id }));
+
+        const roleSql = `SELECT * FROM role`;
+        pool.query(roleSql, (error, rolesData) => {
+            if (error) throw error;
+            const roles = rolesData.rows.map(role => ({ name: role.title, value: role.id }));
+        })
+    })
+
+
+
     sqlQuery = `SELECT employee.id, employee.first_name, employee.last_name, role.id AS "role_id" 
             FROM employee, role, department WHERE department.id = role.department_id AND role.id = employee.role_id`;
     pool.query(sqlQuery, (error, response) => {
@@ -287,31 +277,14 @@ const updateEmployeeRole = () => {
                 }
         ])
         .then((answer) => {
-            let newTitleId, employeeId;
-
-            response.forEach((role) => {
-                if (answer.chosenRole === role.title) {
-                    newTitleId = role.id;
-                }
+            const sqlQuery = `UPDATE employee SET employee.role_id = ? WHERE employee.id = ?`;
+            const values = [answer.roleId, answer.employeeId];
+            pool.query(sqlQuery, values, (error) => {
+                if (error) throw error 
+                    console.log("\nEmployee Role Updated\n");
+                    viewAllEmployees();
+                });
             });
-            response.forEach((employee) => {
-                if (answer.chosenEmployee === `${employee.first_name} ${employee.last_name}`) {
-                    employeeId = employee.id;
-                }
-            });
-            sqlQuery = `UPDATE employee SET employee.role_id = ? WHERE employee.id = ?`;
-            pool.query(
-                sqlQuery, [newTitleId, employeeId],
-                (error) => {
-                    if (error) throw error;
-                    console.log("\n");
-                    console.table(results);
-                    console.log("\n");
-                    console.log(`Employee Role Updated`);
-                    promptUser();
-                }
-            );
-        });
         });
     });
 };
